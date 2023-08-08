@@ -1,0 +1,73 @@
+#Mean, std, Pct change 1(Y to Y-1) Pct Change 2 (Y to Y-2), Rate of change
+
+df3_a=pd.DataFrame()
+df3_a=df3
+
+grouped_df=df3_a.groupby('key1')
+
+df3_a = df3_a.sort_values(by=['key1','VALID_FROM_DT','VALID_TO_DT'],ascending=True)
+
+for c in list3:
+    df3_a[[c+'_mean']] = grouped_df[[c]].transform('mean')
+    df3_a[[c+'_std']] = grouped_df[[c]].transform('std')
+    df3_a[[c+'_chg1']] = grouped_df[[c]].pct_change()
+    df3_a[[c+'_chg2']] = grouped_df[[c]].pct_change(2)
+
+    
+from scipy.stats import linregress
+
+df3_b=pd.DataFrame() 
+df3_b = df3.sort_values(by=['key1','VALID_FROM_DT','VALID_TO_DT'],ascending=True)    
+df3_slope=pd.DataFrame(df3['key1'])
+for c in list3:
+    q=pd.DataFrame(df3_b.groupby('key1').apply(lambda v: linregress(v['KPI_YEAR'], v[c])[0]))
+    q.reset_index(inplace=True)
+    q.columns=['key1',c+'_slope']
+    df3_slope=pd.DataFrame(df3_slope.merge(q, on='key1', how='left'))
+
+df3_slope=df3_slope.drop_duplicates()
+
+#Consolidate data after Feature extraction
+#mean
+vl1=df3_a.filter(regex='_mean$',axis=1).columns.tolist()
+vl1.append('key1')
+df3_mean=pd.DataFrame()
+df3_mean=df3_a.loc[:,vl1]
+df3_mean=df3_mean.drop_duplicates()
+
+#std
+vl2=df3_a.filter(regex='_std$',axis=1).columns.tolist()
+vl2.append('key1')
+df3_std=pd.DataFrame()
+df3_std=df3_a.loc[:,vl2]
+df3_std=df3_std.drop_duplicates()
+
+
+
+# DBTITLE 1,Tabulate the features#2 - Pct change 1 & 2
+# Pick up the third row for pct change 1 and 2
+#chg1
+vl3=df3_a.filter(regex='_chg1$',axis=1).columns.tolist()
+vl3.append('key1')
+df3_chg1=pd.DataFrame()
+df3_chg1=df3_a.loc[:,vl3]
+df3_chg1 = df3_chg1.groupby('key1').nth(2)
+df3_chg1.reset_index(inplace=True)
+
+
+#chg2
+vl4=df3_a.filter(regex='_chg2$',axis=1).columns.tolist()
+vl4.append('key1')
+df3_chg2=pd.DataFrame()
+df3_chg2=df3_a.loc[:,vl4]
+df3_chg2 = df3_chg2.groupby('key1').nth(2)
+df3_chg2.reset_index(inplace=True)
+df3_chg2.info()
+
+print(df3_mean.shape)
+print(df3_std.shape)
+print(df3_chg1.shape)
+print(df3_chg2.shape)
+print(df3_slope.shape)
+
+
